@@ -1,0 +1,1 @@
+/Users/charliedifranco/.config/nvim/init.lua
