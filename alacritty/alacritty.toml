@@ -24,7 +24,7 @@ bold = { family = "JetBrainsMono Nerd Font", style = "Bold" }
 italic = { family = "JetBrainsMono Nerd Font", style = "Italic" }
 
 # Font size in points
-size = 13.0
+size = 14.5
 
 [colors.primary]
 background = "0xfdf6e3"
