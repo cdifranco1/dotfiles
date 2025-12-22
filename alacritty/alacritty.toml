@@ -24,7 +24,7 @@ bold = { family = "JetBrainsMono Nerd Font", style = "Bold" }
 italic = { family = "JetBrainsMono Nerd Font", style = "Italic" }
 
 # Font size in points
-size = 14.5
+size = 16
 
 [colors.primary]
 background = "#f3ead3"
@@ -53,9 +53,25 @@ white   = "#d8d3ba"
 [cursor]
 style = { shape = "Block", blinking = "On" }
 
+[scrolling]
+history = 10000
+multiplier = 3
+
 [keyboard]
 bindings = [
   # Example: Ctrl+Shift+T to spawn a new terminal window
   { key = "T", mods = "Control|Shift", action = "SpawnNewInstance" },
+
+    # Option + Left → jump left by word
+  { key = "Left",  mods = "Alt", chars = "\u001bb" },
+
+  # Option + Right → jump right by word
+  { key = "Right", mods = "Alt", chars = "\u001bf" },
+
+  # Option + Backspace → delete previous word
+  { key = "Back", mods = "Alt", chars = "\u0017" },
+
+  # Option + Delete → delete next word (optional)
+  { key = "Delete", mods = "Alt", chars = "\u001b[3;3~" }
 ]
 
