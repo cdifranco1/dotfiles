@@ -428,7 +428,15 @@ require("lazy").setup({
 				--    https://github.com/pmizio/typescript-tools.nvim
 				--
 				-- But for many setups, the LSP (`ts_ls`) will work just fine
-				ts_ls = {},
+				ts_ls = {
+					init_options = {
+						preferences = {
+							includeCompletionsForModuleExports = true,
+							includeCompletionsForImportStatements = true,
+							includeCompletionsWithInsertText = true,
+						},
+					},
+				},
 				--
 
 				lua_ls = {
@@ -619,6 +627,17 @@ vim.keymap.set("n", "<leader>ff", builtin.find_files, { desc = "Telescope find f
 vim.keymap.set("n", "<leader>fg", builtin.live_grep, { desc = "Telescope live grep" })
 vim.keymap.set("n", "<leader>fb", builtin.buffers, { desc = "Telescope buffers" })
 vim.keymap.set("n", "<leader>fh", builtin.help_tags, { desc = "Telescope help tags" })
+
+-- TypeScript: add missing imports
+vim.keymap.set("n", "<leader>oi", function()
+	vim.lsp.buf.code_action({
+		apply = true,
+		context = {
+			only = { "source.addMissingImports.ts" },
+			diagnostics = {},
+		},
+	})
+end, { desc = "[O]rganize [I]mports (add missing)" })
 
 -- Comment toggles
 vim.keymap.set("n", "<leader>/", function()
