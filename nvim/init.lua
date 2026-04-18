@@ -743,7 +743,7 @@ vim.opt.scrolloff = 8
 vim.opt.smartindent = true
 vim.opt.hlsearch = false
 vim.opt.incsearch = true
-vim.opt.mouse = a
+vim.opt.mouse = "a"
 
 -- Telescope keymaps
 local builtin = require("telescope.builtin")
@@ -835,3 +835,22 @@ vim.api.nvim_create_autocmd("QuickFixCmdPost", {
 		vim.cmd("Trouble qflist open")
 	end,
 })
+
+vim.keymap.set("n", "<leader>o", function()
+	vim.cmd("topleft vsplit")
+	vim.cmd("vertical resize 30")
+	require("oil").open()
+end)
+
+vim.opt.scrolloff = 8
+vim.opt.sidescrolloff = 8
+
+-- Resizing key maps
+vim.keymap.set("n", "<leader>>", "<C-w>>")
+vim.keymap.set("n", "<leader><", "<C-w><")
+
+-- Window navigation
+vim.keymap.set("n", "<leader>h", "<cmd>wincmd h<CR>", { silent = true })
+vim.keymap.set("n", "<leader>j", "<cmd>wincmd j<CR>", { silent = true })
+vim.keymap.set("n", "<leader>k", "<cmd>wincmd k<CR>", { silent = true })
+vim.keymap.set("n", "<leader>l", "<cmd>wincmd l<CR>", { silent = true })
