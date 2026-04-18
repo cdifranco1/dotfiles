@@ -7,7 +7,7 @@ vim.g.maplocalleader = " "
 vim.opt.termguicolors = true
 
 -- Pick ONE: dark or light. Keep this consistent with the theme config below.
-vim.opt.background = "light"
+vim.opt.background = "dark"
 
 -- Bootstrap lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
@@ -25,21 +25,30 @@ vim.opt.rtp:prepend(lazypath)
 
 require("lazy").setup({
 	{
-		"neanias/everforest-nvim",
-		version = false,
+		"navarasu/onedark.nvim",
 		lazy = false,
 		priority = 1000,
 		config = function()
-			require("everforest").setup({
-				background = "soft",
-				ui_contrast = "low",
-				italics = true,
-			})
-
-			vim.o.background = "light"
-			vim.cmd("colorscheme everforest")
+			require("onedark").setup({ style = "dark" })
+			require("onedark").load()
 		end,
 	},
+	-- {
+	-- 	"neanias/everforest-nvim",
+	-- 	version = false,
+	-- 	lazy = false,
+	-- 	priority = 1000,
+	-- 	config = function()
+	-- 		require("everforest").setup({
+	-- 			background = "soft",
+	-- 			ui_contrast = "low",
+	-- 			italics = true,
+	-- 		})
+	--
+	-- 		vim.o.background = "light"
+	-- 		vim.cmd("colorscheme everforest")
+	-- 	end,
+	-- },
 	-- {
 	-- 	"rose-pine/neovim",
 	-- 	name = "rose-pine",
@@ -71,8 +80,17 @@ require("lazy").setup({
 			highlight = { enable = true },
 		},
 		config = function(_, opts)
-			require("nvim-treesitter.configs").setup(opts)
+			require("nvim-treesitter").setup(opts)
 		end,
+	},
+
+	-- Treesitter context (sticky function/class headers)
+	{
+		"nvim-treesitter/nvim-treesitter-context",
+		dependencies = { "nvim-treesitter/nvim-treesitter" },
+		opts = {
+			max_lines = 3,
+		},
 	},
 
 	-- amongst your other plugins
@@ -140,7 +158,16 @@ require("lazy").setup({
 	{ "nvim-telescope/telescope.nvim", dependencies = { "nvim-lua/plenary.nvim" } },
 
 	-- Statusline (optional)
-	{ "nvim-lualine/lualine.nvim", opts = {} },
+	{
+		"nvim-lualine/lualine.nvim",
+		opts = {
+			sections = {
+				lualine_c = {
+					{ "filename", path = 1 },
+				},
+			},
+		},
+	},
 
 	-- Comments
 	{
@@ -427,13 +454,40 @@ require("lazy").setup({
 				-- Some languages (like typescript) have entire language plugins that can be useful:
 				--    https://github.com/pmizio/typescript-tools.nvim
 				--
-				-- But for many setups, the LSP (`ts_ls`) will work just fine
-				ts_ls = {
-					init_options = {
-						preferences = {
-							includeCompletionsForModuleExports = true,
-							includeCompletionsForImportStatements = true,
-							includeCompletionsWithInsertText = true,
+				-- vtsls: VSCode's TypeScript extension exposed as an LSP. Drop-in for ts_ls
+				-- with better refactors (file-move, rename-imports) and auto-imports.
+				vtsls = {
+					settings = {
+						typescript = {
+							tsserver = {
+								maxTsServerMemory = 4096,
+							},
+							updateImportsOnFileMove = { enabled = "always" },
+							suggest = { completeFunctionCalls = true },
+							inlayHints = {
+								parameterNames = { enabled = "literals" },
+								parameterTypes = { enabled = true },
+								variableTypes = { enabled = false },
+								propertyDeclarationTypes = { enabled = true },
+								functionLikeReturnTypes = { enabled = true },
+								enumMemberValues = { enabled = true },
+							},
+							preferences = {
+								includeCompletionsForModuleExports = true,
+								includeCompletionsForImportStatements = true,
+								includeCompletionsWithInsertText = true,
+							},
+						},
+						javascript = {
+							updateImportsOnFileMove = { enabled = "always" },
+							suggest = { completeFunctionCalls = true },
+						},
+						vtsls = {
+							enableMoveToFileCodeAction = true,
+							autoUseWorkspaceTsdk = true,
+							experimental = {
+								completion = { enableServerSideFuzzyMatch = true },
+							},
 						},
 					},
 				},
@@ -492,6 +546,64 @@ require("lazy").setup({
 		end,
 	},
 
+	-- Git signs in the gutter + inline hunk navigation/preview
+	{
+		"lewis6991/gitsigns.nvim",
+		event = { "BufReadPre", "BufNewFile" },
+		opts = {
+			on_attach = function(bufnr)
+				local gs = require("gitsigns")
+				local function map(mode, l, r, desc)
+					vim.keymap.set(mode, l, r, { buffer = bufnr, desc = desc })
+				end
+
+				-- Navigate hunks
+				map("n", "]c", function()
+					if vim.wo.diff then
+						vim.cmd.normal({ "]c", bang = true })
+					else
+						gs.nav_hunk("next")
+					end
+				end, "Next git hunk")
+				map("n", "[c", function()
+					if vim.wo.diff then
+						vim.cmd.normal({ "[c", bang = true })
+					else
+						gs.nav_hunk("prev")
+					end
+				end, "Prev git hunk")
+
+				-- Actions
+				map("n", "<leader>gh", gs.preview_hunk, "[G]it preview [H]unk")
+				map("n", "<leader>gb", function()
+					gs.blame_line({ full = true })
+				end, "[G]it [B]lame line")
+				map("n", "<leader>gs", gs.stage_hunk, "[G]it [S]tage hunk")
+				map("n", "<leader>gr", gs.reset_hunk, "[G]it [R]eset hunk")
+				map("n", "<leader>gS", gs.stage_buffer, "[G]it [S]tage buffer")
+				map("n", "<leader>gR", gs.reset_buffer, "[G]it [R]eset buffer")
+				map("n", "<leader>gd", gs.diffthis, "[G]it [D]iff this (vs index)")
+				map("n", "<leader>gD", function()
+					gs.diffthis("~")
+				end, "[G]it [D]iff this (vs HEAD~)")
+			end,
+		},
+	},
+
+	-- Full-screen git diff viewer (file tree + side-by-side)
+	{
+		"sindrets/diffview.nvim",
+		dependencies = { "nvim-lua/plenary.nvim" },
+		cmd = { "DiffviewOpen", "DiffviewClose", "DiffviewToggleFiles", "DiffviewFileHistory" },
+		keys = {
+			{ "<leader>gv", "<cmd>DiffviewOpen<cr>", desc = "[G]it diff[V]iew (working tree)" },
+			{ "<leader>gV", "<cmd>DiffviewClose<cr>", desc = "[G]it diff[V]iew close" },
+			{ "<leader>gf", "<cmd>DiffviewFileHistory %<cr>", desc = "[G]it [F]ile history" },
+			{ "<leader>gl", "<cmd>DiffviewFileHistory<cr>", desc = "[G]it [L]og (repo history)" },
+			{ "<leader>gm", "<cmd>DiffviewOpen main...HEAD<cr>", desc = "[G]it diff vs [M]ain" },
+		},
+	},
+
 	-- Diagnostics
 	{
 		"folke/trouble.nvim",
@@ -534,6 +646,15 @@ require("lazy").setup({
 		},
 	},
 
+	-- TypeScript project-wide type checking via `tsc --noEmit`
+	{
+		"dmmulroy/tsc.nvim",
+		cmd = { "TSC" },
+		opts = {
+			use_diagnostics = false,
+		},
+	},
+
 	{ -- Autoformat
 		"stevearc/conform.nvim",
 		event = { "BufWritePre" },
@@ -566,11 +687,14 @@ require("lazy").setup({
 			end,
 			formatters_by_ft = {
 				lua = { "stylua" },
-				-- Conform can also run multiple formatters sequentially
 				python = { "black" },
-				--
-				-- You can use 'stop_after_first' to run the first available formatter from the list
-				-- javascript = { "prettierd", "prettier", stop_after_first = true },
+				javascript = { "prettier" },
+				typescript = { "prettier" },
+				javascriptreact = { "prettier" },
+				typescriptreact = { "prettier" },
+				json = { "prettier" },
+				css = { "prettier" },
+				html = { "prettier" },
 			},
 		},
 	},
@@ -628,6 +752,63 @@ vim.keymap.set("n", "<leader>fg", builtin.live_grep, { desc = "Telescope live gr
 vim.keymap.set("n", "<leader>fb", builtin.buffers, { desc = "Telescope buffers" })
 vim.keymap.set("n", "<leader>fh", builtin.help_tags, { desc = "Telescope help tags" })
 
+-- Navigate diagnostics
+vim.keymap.set("n", "]d", function()
+	vim.diagnostic.jump({ count = 1, float = true })
+end, { desc = "Next diagnostic" })
+vim.keymap.set("n", "[d", function()
+	vim.diagnostic.jump({ count = -1, float = true })
+end, { desc = "Prev diagnostic" })
+vim.keymap.set("n", "]e", function()
+	vim.diagnostic.jump({ count = 1, severity = vim.diagnostic.severity.ERROR, float = true })
+end, { desc = "Next error" })
+vim.keymap.set("n", "[e", function()
+	vim.diagnostic.jump({ count = -1, severity = vim.diagnostic.severity.ERROR, float = true })
+end, { desc = "Prev error" })
+
+-- Cycle through TSC / quickfix entries (wraps at ends)
+vim.keymap.set("n", "]q", function()
+	local ok = pcall(vim.cmd, "cnext")
+	if not ok then
+		pcall(vim.cmd, "cfirst")
+	end
+end, { desc = "Next quickfix (TSC error)" })
+vim.keymap.set("n", "[q", function()
+	local ok = pcall(vim.cmd, "cprevious")
+	if not ok then
+		pcall(vim.cmd, "clast")
+	end
+end, { desc = "Prev quickfix (TSC error)" })
+vim.keymap.set("n", "<leader>tc", "<cmd>TSC<cr>", { desc = "[T]ype[C]heck project" })
+-- In the quickfix window: <CR> jumps to the error AND closes the quickfix list
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = "qf",
+	callback = function(event)
+		vim.keymap.set("n", "<CR>", "<CR>:cclose<CR>", { buffer = event.buf, desc = "Jump and close quickfix" })
+	end,
+})
+
+vim.keymap.set("n", "<leader>tl", function()
+	for _, win in ipairs(vim.fn.getwininfo()) do
+		if win.quickfix == 1 then
+			vim.cmd("cclose")
+			return
+		end
+	end
+	vim.cmd("copen")
+end, { desc = "[T]SC error [L]ist toggle" })
+
+-- Diagnostics: show full message in a focusable float (press again to enter it, then scroll)
+vim.keymap.set("n", "<leader>d", function()
+	vim.diagnostic.open_float(nil, { focus = false, scope = "line" })
+end, { desc = "Line [D]iagnostics (float)" })
+vim.keymap.set("n", "<leader>D", function()
+	local _, winid = vim.diagnostic.open_float(nil, { scope = "line" })
+	if winid then
+		vim.api.nvim_set_current_win(winid)
+	end
+end, { desc = "Line [D]iagnostics (focus float)" })
+
 -- TypeScript: add missing imports
 vim.keymap.set("n", "<leader>oi", function()
 	vim.lsp.buf.code_action({
@@ -648,3 +829,9 @@ vim.keymap.set("v", "<leader>/", function()
 	vim.api.nvim_feedkeys(esc, "nx", false)
 	require("Comment.api").toggle.linewise(vim.fn.visualmode())
 end, { desc = "Toggle comment" })
+
+vim.api.nvim_create_autocmd("QuickFixCmdPost", {
+	callback = function()
+		vim.cmd("Trouble qflist open")
+	end,
+})
